@@ -17,46 +17,45 @@ void print_help() {
   printf("  tail                    Read from stdin\n");
 }
 
+int is_number(const char *s) {
+  if (*s == '\0') return 0;
+  for (int i = 0; s[i]; i++) {
+    if (s[i] < '0' || s[i] > '9') return 0;
+  }
+  return 1;
+}
+
 int main(int argc, char *argv[]) {
   int fd = 0, n = 10, total = 0;
   char line[MAX_LINE];
   int line_len = 0, c;
-  int from_pipe = 1;
 
-  // Handle help
   if (argc >= 2 && strcmp(argv[1], "--help") == 0) {
     print_help();
     exit(0);
   }
 
-  // Argument Parsing
   if (argc == 1) {
-    // tail
     fd = 0;
   } else if (argc == 2) {
-    // tail file
-    from_pipe = 0;
     fd = open(argv[1], 0);
     if (fd < 0) {
       fprintf(2, "tail: cannot open %s\n", argv[1]);
       exit(1);
     }
   } else if (argc == 3 && strcmp(argv[1], "-n") == 0) {
-    // tail -n N
-    n = atoi(argv[2]);
-    if (n < 0) {
-      fprintf(2, "tail: invalid line count\n");
+    if (!is_number(argv[2])) {
+      fprintf(2, "tail: invalid number of lines: %s\n", argv[2]);
       exit(1);
     }
+    n = atoi(argv[2]);
     fd = 0;
   } else if (argc == 4 && strcmp(argv[1], "-n") == 0) {
-    // tail -n N file
-    n = atoi(argv[2]);
-    if (n < 0) {
-      fprintf(2, "tail: invalid line count\n");
+    if (!is_number(argv[2])) {
+      fprintf(2, "tail: invalid number of lines: %s\n", argv[2]);
       exit(1);
     }
-    from_pipe = 0;
+    n = atoi(argv[2]);
     fd = open(argv[3], 0);
     if (fd < 0) {
       fprintf(2, "tail: cannot open %s\n", argv[3]);
@@ -67,7 +66,11 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
 
-  // Read input one char at a time
+  if (n < 0) {
+    fprintf(2, "tail: number of lines cannot be negative: %d\n", n);
+    exit(1);
+  }
+
   while (read(fd, &c, 1) == 1) {
     if (c == '\n' || line_len == MAX_LINE - 1) {
       line[line_len] = '\0';
@@ -83,7 +86,6 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  // Handle input that ends without newline
   if (line_len > 0) {
     line[line_len] = '\0';
     for (int j = 0; j < MAX_LINE; j++) {
@@ -94,12 +96,11 @@ int main(int argc, char *argv[]) {
     total++;
   }
 
-  // Output last N lines
   int start = total > n ? total - n : 0;
   for (int i = start; i < total; i++) {
     printf("%s\n", buf[i % MAX_LINES]);
   }
 
-  if (!from_pipe) close(fd);
+  if (fd > 0) close(fd);
   exit(0);
 }
