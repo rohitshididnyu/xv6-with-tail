@@ -140,10 +140,13 @@ UPROGS=\
 	$U/_usertests\
 	$U/_grind\
 	$U/_wc\
+	$U/_tail\
 	$U/_zombie\
+	
+extra = testing.txt
 
-fs.img: mkfs/mkfs README $(UPROGS)
-	mkfs/mkfs fs.img README $(UPROGS)
+fs.img: mkfs/mkfs README $(UPROGS) $(extra)
+	mkfs/mkfs fs.img README $(UPROGS) $(extra)
 
 -include kernel/*.d user/*.d
 
